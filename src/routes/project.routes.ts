@@ -3,24 +3,32 @@ import db from '../services/db.service';
 
 const router = Router();
 
-// Get all projects
+// Get all projects with their reports
 router.get('/', (req, res) => {
 	try {
 		const projects = db.getAllProjects();
-		res.json(projects);
+		const projectsWithReports = projects.map((project) => ({
+			...project,
+			reports: db.getReportsByProjectId(project.id),
+		}));
+		res.json(projectsWithReports);
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to fetch projects' });
 	}
 });
 
-// Get project by ID
+// Get project by ID with its reports
 router.get('/:id', (req, res) => {
 	try {
 		const project = db.getProjectById(req.params.id);
 		if (!project) {
 			return res.status(404).json({ error: 'Project not found' });
 		}
-		res.json(project);
+		const projectWithReports = {
+			...project,
+			reports: db.getReportsByProjectId(project.id),
+		};
+		res.json(projectWithReports);
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to fetch project' });
 	}
