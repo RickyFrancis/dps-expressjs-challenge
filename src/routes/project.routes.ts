@@ -7,11 +7,7 @@ const router = Router();
 router.get('/', (req, res) => {
 	try {
 		const projects = db.getAllProjects();
-		const projectsWithReports = projects.map((project) => ({
-			...project,
-			reports: db.getReportsByProjectId(project.id),
-		}));
-		res.json(projectsWithReports);
+		res.json(projects);
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to fetch projects' });
 	}

@@ -39,13 +39,13 @@ router.get('/project/:projectId', (req, res) => {
 // Create new report
 router.post('/', (req, res) => {
 	try {
-		const { text, project_id } = req.body;
-		if (!text || !project_id) {
+		const { text, projectid } = req.body;
+		if (!text || !projectid) {
 			return res
 				.status(400)
-				.json({ error: 'Report text and project_id are required' });
+				.json({ error: 'Report text and projectid are required' });
 		}
-		const report = db.createReport({ text, project_id });
+		const report = db.createReport({ text, projectid });
 		res.status(201).json(report);
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to create report' });
@@ -55,8 +55,8 @@ router.post('/', (req, res) => {
 // Update report
 router.put('/:id', (req, res) => {
 	try {
-		const { text, project_id } = req.body;
-		const report = db.updateReport(req.params.id, { text, project_id });
+		const { text, projectid } = req.body;
+		const report = db.updateReport(req.params.id, { text, projectid });
 		if (!report) {
 			return res.status(404).json({ error: 'Report not found' });
 		}
