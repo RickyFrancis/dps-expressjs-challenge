@@ -48,6 +48,12 @@ router.post('/', (req, res) => {
 		const report = db.createReport({ text, projectid });
 		res.status(201).json(report);
 	} catch (error) {
+		if (
+			error instanceof Error &&
+			error.message.includes('Project does not exist')
+		) {
+			return res.status(404).json({ error: error.message });
+		}
 		res.status(500).json({ error: 'Failed to create report' });
 	}
 });
@@ -62,6 +68,12 @@ router.put('/:id', (req, res) => {
 		}
 		res.json(report);
 	} catch (error) {
+		if (
+			error instanceof Error &&
+			error.message.includes('Project does not exist')
+		) {
+			return res.status(404).json({ error: error.message });
+		}
 		res.status(500).json({ error: 'Failed to update report' });
 	}
 });

@@ -61,11 +61,11 @@ router.put('/:id', (req, res) => {
 // Delete project
 router.delete('/:id', (req, res) => {
 	try {
-		const success = db.deleteProject(req.params.id);
-		if (!success) {
-			return res.status(404).json({ error: 'Project not found' });
+		const result = db.deleteProject(req.params.id);
+		if (!result.success) {
+			return res.status(404).json({ error: result.message });
 		}
-		res.status(204).send();
+		res.status(200).json({ message: result.message });
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to delete project' });
 	}

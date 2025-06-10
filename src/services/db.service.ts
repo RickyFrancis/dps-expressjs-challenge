@@ -46,12 +46,34 @@ function getAllProjects(): ProjectResponse[] {
 	return Array.from(projectsMap.values());
 }
 
-function getProjectById(id: string): Project | undefined {
-	const projects = query(
-		'SELECT p.id AS project_id, p.name AS project_name, p.description AS project_description, r.id AS report_id, r.text AS report_text FROM projects p LEFT JOIN reports r ON p.id = r.projectid WHERE p.id = ? ORDER BY p.id, r.id',
+function getProjectById(id: string): ProjectResponse | undefined {
+	const rawResults = query(
+		'SELECT p.id AS id, p.name AS name, p.description AS description, r.id AS report_id, r.text AS report_text, r.projectid FROM projects p LEFT JOIN reports r ON p.id = r.projectid WHERE p.id = ? ORDER BY r.id',
 		[id],
-	) as Project[];
-	return projects[0];
+	) as RawProjectResult[];
+
+	if (rawResults.length === 0) {
+		return undefined;
+	}
+
+	const project: ProjectResponse = {
+		id: rawResults[0].id,
+		name: rawResults[0].name,
+		description: rawResults[0].description,
+		reports: [],
+	};
+
+	rawResults.forEach((row) => {
+		if (row.report_id) {
+			project.reports.push({
+				id: row.report_id,
+				text: row.report_text!,
+				projectid: row.projectid!,
+			});
+		}
+	});
+
+	return project;
 }
 
 function createProject(project: Omit<Project, 'id'>): Project {
@@ -80,9 +102,27 @@ function updateProject(
 	return updatedProject;
 }
 
-function deleteProject(id: string): boolean {
+function deleteProject(id: string): { success: boolean; message: string } {
+	// First check if project exists
+	const project = getProjectById(id);
+	if (!project) {
+		return {
+			success: false,
+			message:
+				'Project does not exist, please try with a valid project id',
+		};
+	}
+
+	// Delete all reports associated with the project
+	run('DELETE FROM reports WHERE projectid = ?', [id]);
+
+	// Delete the project
 	const result = run('DELETE FROM projects WHERE id = ?', [id]);
-	return result.changes > 0;
+
+	return {
+		success: result.changes > 0,
+		message: 'Project and its reports have been successfully deleted',
+	};
 }
 
 // Report CRUD operations
@@ -104,6 +144,14 @@ function getReportsByProjectId(projectId: string): Report[] {
 }
 
 function createReport(report: Omit<Report, 'id'>): Report {
+	// First check if project exists
+	const project = getProjectById(report.projectid);
+	if (!project) {
+		throw new Error(
+			'Project does not exist, please try with a valid project id',
+		);
+	}
+
 	const id = uuidv4();
 	run('INSERT INTO reports (id, text, projectid) VALUES (?, ?, ?)', [
 		id,
@@ -119,6 +167,16 @@ function updateReport(
 ): Report | undefined {
 	const currentReport = getReportById(id);
 	if (!currentReport) return undefined;
+
+	// If projectid is being updated, verify the new project exists
+	if (report.projectid) {
+		const project = getProjectById(report.projectid);
+		if (!project) {
+			throw new Error(
+				'Project does not exist, please try with a valid project id',
+			);
+		}
+	}
 
 	const updatedReport = { ...currentReport, ...report };
 	run('UPDATE reports SET text = ?, projectid = ? WHERE id = ?', [
