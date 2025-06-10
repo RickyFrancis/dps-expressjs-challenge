@@ -192,6 +192,28 @@ function deleteReport(id: string): boolean {
 	return result.changes > 0;
 }
 
+function getReportsWithFrequentWords(minOccurrences: number = 3): Report[] {
+	const reports = getAllReports();
+
+	return reports.filter((report) => {
+		// Split text into words and count occurrences
+		const words = report.text.toLowerCase().split(/\W+/);
+		const wordCount = new Map<string, number>();
+
+		words.forEach((word) => {
+			if (word.length > 0) {
+				// Skip empty strings
+				wordCount.set(word, (wordCount.get(word) || 0) + 1);
+			}
+		});
+
+		// Check if any word appears at least minOccurrences times
+		return Array.from(wordCount.values()).some(
+			(count) => count >= minOccurrences,
+		);
+	});
+}
+
 export default {
 	query,
 	run,
@@ -206,4 +228,5 @@ export default {
 	createReport,
 	updateReport,
 	deleteReport,
+	getReportsWithFrequentWords,
 };

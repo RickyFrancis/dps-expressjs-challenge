@@ -13,6 +13,28 @@ router.get('/', (req, res) => {
 	}
 });
 
+// Get reports with frequently occurring words
+router.get('/frequent-words', (req, res) => {
+	try {
+		const minOccurrences = req.query.min
+			? parseInt(req.query.min as string)
+			: 3;
+
+		if (isNaN(minOccurrences) || minOccurrences < 1) {
+			return res.status(400).json({
+				error: 'Invalid minimum occurrences value. Must be a positive number.',
+			});
+		}
+
+		const reports = db.getReportsWithFrequentWords(minOccurrences);
+		res.json(reports);
+	} catch (error) {
+		res.status(500).json({
+			error: 'Failed to fetch reports with frequent words',
+		});
+	}
+});
+
 // Get report by ID
 router.get('/:id', (req, res) => {
 	try {
